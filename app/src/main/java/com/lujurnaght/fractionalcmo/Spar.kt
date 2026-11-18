@@ -96,8 +96,8 @@ fun SparTab(nav: Nav) {
                 Spacer(Modifier.width(16.dp))
                 val best = s.bestSpar(sc.id)
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(best?.toString() ?: "—", style = T.num.copy(color = if (best == null) P.faint else P.ink))
-                    Label("Best")
+                    if (best != null) { Text(best.toString(), style = T.num); Label("Best") }
+                    else Label("New", color = P.ink)
                 }
             }
             Rule()

@@ -50,6 +50,8 @@ fun FieldScreen(@Suppress("UNUSED_PARAMETER") nav: Nav) {
                         }
                         GhostButton("Done") { sel = null }
                     }
+                    val n = s.todayCount(a.kind)
+                    if (n > 0) { Gap(8); Text("✓ $n logged today", style = T.small.copy(color = P.ink)) }
                     Gap(14)
                 }
                 Rule()
@@ -232,7 +234,7 @@ private fun QuestRow(q: Quest, done: Ev?, open: Boolean, toggle: () -> Unit) {
                 Label("Claimed ${shortDay(done.t)}")
                 if (done.proof.isNotBlank()) Text(done.proof, style = T.small)
             } else {
-                var proof by remember(q.id) { mutableStateOf("") }
+                var proof by remember(q.id) { mutableStateOf(when (q.id) { "niche" -> Store.st.niche; "offer" -> Store.st.offer; else -> "" }) }
                 Input(proof, { proof = it }, "Proof: a link, a name, a number", singleLine = false)
                 Gap(10)
                 PrimaryButton("Claim   +${q.xp} XP", enabled = proof.isNotBlank()) {

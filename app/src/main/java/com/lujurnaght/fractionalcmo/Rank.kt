@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,14 +93,24 @@ fun RankScreen(@Suppress("UNUSED_PARAMETER") nav: Nav) {
         Gap(8)
         var key by remember { mutableStateOf(Keys.groq) }
         var show by remember { mutableStateOf(false) }
+        var testing by remember { mutableStateOf(false) }
+        var keyMsg by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
         Input(key, { key = it }, "gsk_…", secret = !show)
         Gap(10)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            PrimaryButton("Save key", enabled = key.trim() != Keys.groq) { Keys.saveGroq(key) }
+            PrimaryButton(if (testing) "Testing…" else "Save and test", enabled = key.isNotBlank() && !testing) {
+                Keys.saveGroq(key); testing = true; keyMsg = null
+                scope.launch {
+                    keyMsg = runCatching { Groq.test(); "Key works ✓" }.getOrElse { it.message ?: "Test failed" }
+                    testing = false
+                }
+            }
             GhostButton(if (show) "Hide" else "Show") { show = !show }
             Spacer(Modifier.width(4.dp))
-            Text(if (Keys.groq.isBlank()) "Not set" else "Saved on this phone", style = T.small)
         }
+        Gap(6)
+        Text(keyMsg ?: if (Keys.groq.isBlank()) "Not set. Free at console.groq.com → API Keys." else "Saved on this phone.", style = T.small.copy(color = if (keyMsg == "Key works ✓") P.ink else P.grey))
         Gap(24)
         Label("Backup · everything except the key")
         Gap(8)

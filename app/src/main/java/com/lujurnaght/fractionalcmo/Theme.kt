@@ -90,9 +90,8 @@ fun AppTheme(content: @Composable () -> Unit) {
 
 val Sharp = RoundedCornerShape(3.dp)
 
-fun Modifier.tap(onClick: () -> Unit): Modifier = this.clickable(
-    interactionSource = null, indication = null, onClick = onClick,
-)
+/** Tappable with a quiet ripple, so every row answers the finger. */
+fun Modifier.tap(onClick: () -> Unit): Modifier = this.clickable(onClick = onClick)
 
 @Composable
 fun Rule(modifier: Modifier = Modifier, color: Color = P.rule, thick: Dp = 1.dp) {

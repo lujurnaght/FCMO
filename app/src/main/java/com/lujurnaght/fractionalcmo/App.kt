@@ -66,6 +66,7 @@ fun App(startTab: Int = 0, startRoute: Route? = null) {
         )
     }
     BackHandler(enabled = stack.isNotEmpty()) { nav.back() }
+    BackHandler(enabled = stack.isEmpty() && tab != 0) { tab = 0 }
 
     Column(Modifier.fillMaxSize().background(P.paper).windowInsetsPadding(WindowInsets.safeDrawing)) {
         Box(Modifier.weight(1f).fillMaxWidth()) {

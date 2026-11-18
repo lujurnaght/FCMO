@@ -1,5 +1,6 @@
 package com.lujurnaght.fractionalcmo
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +59,21 @@ fun TodayScreen(nav: Nav) {
             }
         }
 
+        if (!Groq.ready || s.niche.isBlank()) {
+            Gap(14)
+            Column(Modifier.fillMaxWidth().border(1.5.dp, P.ink, Sharp).padding(18.dp)) {
+                Label("Set up · 2 minutes", color = P.ink)
+                Gap(10)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().tap { nav.tab(4) }.padding(vertical = 6.dp)) {
+                    Tick(Groq.ready, size = 18.dp); Spacer(Modifier.width(12.dp))
+                    Text("Add your Groq key — powers sparring, cases and grading", style = T.strong, modifier = Modifier.weight(1f))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().tap { nav.tab(3) }.padding(vertical = 6.dp)) {
+                    Tick(s.niche.isNotBlank(), size = 18.dp); Spacer(Modifier.width(12.dp))
+                    Text("Write your niche — every exercise is graded against it", style = T.strong, modifier = Modifier.weight(1f))
+                }
+            }
+        }
         Section(1, "Three moves")
         Text("Picked from your weak spots, your reviews and where your pipeline is stuck.", style = T.small)
         Gap(4)
@@ -122,7 +138,7 @@ object Coach {
         val done = learnedToday(s)
         val due = s.dueCards().size
         if (due >= 5) return MoveSpec(false, "Review $due cards", "Learn · before you forget them") { it.go(Route.ReviewR) }
-        val weak = s.exercises.filter { it.value.score < 60 }.minByOrNull { it.value.score }
+        val weak = s.exercises.filter { it.value.score < 60 && dayOf(it.value.t) < today() }.minByOrNull { it.value.score }
         if (weak != null) {
             val l = Curriculum.lesson(weak.key)
             return MoveSpec(done && s.todayCount("exercise") > 0, "Redo: ${l.title}", "Learn · your weakest exercise (${weak.value.score}/100)") { it.go(Route.ExerciseR(l.id)) }

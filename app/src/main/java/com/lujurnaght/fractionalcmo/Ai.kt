@@ -20,38 +20,81 @@ object Groq {
     private const val ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
     val ready: Boolean get() = Keys.groq.isNotBlank()
 
-    suspend fun chat(system: String, messages: List<Msg>, temperature: Double = 0.7, effort: String = "low"): String = withContext(Dispatchers.IO) {
-        val key = Keys.groq.ifBlank { error("Add your Groq key in Rank → Settings.") }
+    /** The model in use: Groq's strongest by default; if Groq retires it, the best available is found and remembered. */
+    @Volatile private var model = MODEL
+
+    private fun requestBody(m: String, system: String, messages: List<Msg>, temperature: Double, effort: String): String {
         val arr = JSONArray().put(JSONObject().put("role", "system").put("content", system))
         messages.forEach { arr.put(JSONObject().put("role", it.role).put("content", it.text)) }
-        val body = JSONObject().put("model", MODEL).put("messages", arr).put("temperature", temperature)
-            .put("reasoning_effort", effort).put("include_reasoning", false).toString()
+        return JSONObject().put("model", m).put("messages", arr).put("temperature", temperature)
+            .apply { if (m.startsWith("openai/gpt-oss")) { put("reasoning_effort", effort); put("include_reasoning", false) } }
+            .toString()
+    }
+
+    /** Asks Groq which models exist and picks the strongest general one. */
+    private fun replacementModel(key: String): String? = runCatching {
+        val c = URL("https://api.groq.com/openai/v1/models").openConnection() as HttpURLConnection
+        try {
+            c.connectTimeout = 15000; c.readTimeout = 30000
+            c.setRequestProperty("Authorization", "Bearer $key")
+            val arr = JSONObject(c.inputStream.bufferedReader().use { it.readText() }).getJSONArray("data")
+            val ids = (0 until arr.length()).map { arr.getJSONObject(it).getString("id") }
+                .filter { id -> listOf("whisper", "tts", "guard", "embed", "vision").none { id.contains(it, true) } }
+            ids.firstOrNull { it.contains("gpt-oss-120b") } ?: ids.firstOrNull { it.contains("120b") }
+                ?: ids.firstOrNull { it.contains("70b") } ?: ids.firstOrNull()
+        } finally { c.disconnect() }
+    }.getOrNull()
+
+    suspend fun chat(system: String, messages: List<Msg>, temperature: Double = 0.7, effort: String = "low"): String = withContext(Dispatchers.IO) {
+        val key = Keys.groq.ifBlank { error("Add your Groq key in Rank → Settings.") }
         var last = "Groq couldn't be reached."
-        for (attempt in 0..2) {
+        var swapped = false
+        var attempt = 0
+        while (attempt < 3) {
             val c = URL(ENDPOINT).openConnection() as HttpURLConnection
             try {
                 c.connectTimeout = 15000; c.readTimeout = 120000
                 c.requestMethod = "POST"; c.doOutput = true
                 c.setRequestProperty("Content-Type", "application/json")
                 c.setRequestProperty("Authorization", "Bearer $key")
-                val code = try { c.outputStream.use { it.write(body.toByteArray()) }; c.responseCode }
-                    catch (e: java.io.IOException) { last = "No connection to Groq (${e.javaClass.simpleName})."; delay(2500); continue }
+                val code = try { c.outputStream.use { it.write(requestBody(model, system, messages, temperature, effort).toByteArray()) }; c.responseCode }
+                    catch (e: java.io.IOException) { last = "No connection to Groq (${e.javaClass.simpleName})."; attempt++; delay(2500); continue }
                 if (code in 200..299) {
                     val o = JSONObject(c.inputStream.bufferedReader().use { it.readText() })
-                    return@withContext o.getJSONArray("choices").getJSONObject(0).getJSONObject("message").optString("content").trim()
+                    val text = o.getJSONArray("choices").getJSONObject(0).getJSONObject("message").optString("content").trim()
+                    if (text.isNotEmpty()) return@withContext text
+                    last = "Groq returned an empty answer."; attempt++; continue
                 }
                 val why = runCatching { JSONObject(c.errorStream.bufferedReader().use { it.readText() }).getJSONObject("error").optString("message") }
-                    .getOrNull().orEmpty().take(160)
-                when (code) {
-                    401, 403 -> error("Groq refused the key ($code). Check it in Rank → Settings.")
-                    429 -> error("Today's Groq allowance is used up. It comes back tomorrow.")
-                    400, 404, 413 -> error("Groq: $why")
-                    else -> { last = "Groq is busy ($code). $why".trim(); delay(if (attempt == 0) 3000L else 7000L) }
+                    .getOrNull().orEmpty().take(200)
+                val modelGone = code == 404 || (code == 400 && why.contains("model", true) && (why.contains("decommission", true) || why.contains("not exist", true) || why.contains("not found", true)))
+                when {
+                    modelGone && !swapped -> {
+                        swapped = true
+                        model = replacementModel(key) ?: error("Groq: $why")
+                        continue
+                    }
+                    code == 401 || code == 403 -> error("Groq refused the key ($code). Check it in Rank → Settings.")
+                    code == 429 -> error(if (why.contains("day", true) || why.contains("TPD", true) || why.contains("RPD", true))
+                        "Today's free Groq allowance is used up. It resets within a day." else "Groq's per-minute limit was hit. Wait a minute and try again.")
+                    code == 400 || code == 413 -> error("Groq: $why")
+                    else -> { last = "Groq is busy ($code). $why".trim(); attempt++; delay(if (attempt == 1) 3000L else 7000L) }
                 }
             } finally { c.disconnect() }
         }
         error(last)
     }
+
+    /** Asks, and if the reply has no readable JSON, asks once more. */
+    private suspend fun chatJson(system: String, messages: List<Msg>, temperature: Double, effort: String = "medium"): JSONObject {
+        val first = chat(system, messages, temperature, effort)
+        runCatching { return jsonIn(first) }
+        val again = chat(system + "\nReply with one valid JSON object only. No text before or after it.", messages, 0.1, effort)
+        return jsonIn(again)
+    }
+
+    /** A one-line test of the key, used by Settings. */
+    suspend fun test(): String = chat("Reply with exactly: OK", listOf(Msg("user", "Test")), 0.0, "low")
 
     private fun jsonIn(text: String): JSONObject {
         val a = text.indexOf('{'); val b = text.lastIndexOf('}')
@@ -59,8 +102,7 @@ object Groq {
         return JSONObject(text.substring(a, b + 1))
     }
 
-    private fun parseScore(text: String): Score {
-        val o = jsonIn(text)
+    private fun parseScore(o: JSONObject): Score {
         val cr = o.optJSONArray("criteria") ?: JSONArray()
         val list = (0 until cr.length()).map { i ->
             val c = cr.getJSONObject(i)
@@ -86,7 +128,7 @@ Transcript:
 $convo
 
 Grade the CMO only."""
-        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+        return parseScore(chatJson(GRADER, listOf(Msg("user", prompt)), temperature = 0.2))
     }
 
     suspend fun reply(s: Scenario, transcript: List<Msg>): String {
@@ -112,7 +154,7 @@ Push back realistically. Reveal hidden facts only when the CMO asks good, specif
 Invent a realistic, specific company (name, industry, stage) with concrete numbers: revenue, growth, CAC or acquisition costs, conversion or churn, channels and spend, team, constraints. Include one or two misleading details and one buried clue, like real life.
 Reply with JSON only:
 {"title": "short headline, max 8 words", "situation": "130-180 words, plain prose, numbers included", "question": "one sharp question asking for a decision and a 30-day plan"}"""
-        val o = jsonIn(chat("You write realistic business cases for training senior marketers. JSON only.", listOf(Msg("user", prompt)), temperature = 0.9))
+        val o = chatJson("You write realistic business cases for training senior marketers. JSON only.", listOf(Msg("user", prompt)), temperature = 0.9, effort = "low")
         return DailyCase(day, o.optString("title"), o.optString("situation"), o.optString("question"))
     }
 
@@ -125,7 +167,7 @@ The CMO's answer:
 $answer
 
 Criteria, in this order: Diagnosis; Prioritisation; Use of the numbers; Actionability; Commercial judgment."""
-        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+        return parseScore(chatJson(GRADER, listOf(Msg("user", prompt)), temperature = 0.2))
     }
 
     private fun you(): String {
@@ -151,7 +193,7 @@ Their answer:
 $answer
 
 Grade it as you would a real client deliverable. In "elite", write the answer a top-1% fractional CMO would give for THEIR niche (or a sensible niche if none is given)."""
-        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+        return parseScore(chatJson(GRADER, listOf(Msg("user", prompt)), temperature = 0.2))
     }
 
     suspend fun reviewDoc(t: Template, values: List<String>): Score {
@@ -164,7 +206,7 @@ $doc
 
 Criteria, in this order: Clarity; Specificity to the niche; Persuasiveness; Completeness; Would a real founder act on it.
 Grade it as a real client-facing document. In "elite", rewrite its weakest section the way a top-1% fractional CMO would."""
-        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+        return parseScore(chatJson(GRADER, listOf(Msg("user", prompt)), temperature = 0.2))
     }
 
     suspend fun askLesson(l: Lesson, history: List<Msg>): String {
