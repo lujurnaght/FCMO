@@ -111,7 +111,7 @@ object Keys {
         prefs = ctx.getSharedPreferences("keys", Context.MODE_PRIVATE)
         groq = prefs?.getString("groq", "").orEmpty()
     }
-    fun setGroq(v: String) { groq = v.trim(); prefs?.edit()?.putString("groq", groq)?.apply() }
+    fun saveGroq(v: String) { groq = v.trim(); prefs?.edit()?.putString("groq", groq)?.apply() }
 }
 
 fun now(): Long = System.currentTimeMillis()

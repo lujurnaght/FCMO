@@ -92,7 +92,7 @@ fun RankScreen(@Suppress("UNUSED_PARAMETER") nav: Nav) {
         Input(key, { key = it }, "gsk_…", secret = !show)
         Gap(10)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            PrimaryButton("Save key", enabled = key.trim() != Keys.groq) { Keys.setGroq(key) }
+            PrimaryButton("Save key", enabled = key.trim() != Keys.groq) { Keys.saveGroq(key) }
             GhostButton(if (show) "Hide" else "Show") { show = !show }
             Spacer(Modifier.width(4.dp))
             Text(if (Keys.groq.isBlank()) "Not set" else "Saved on this phone", style = T.small)
