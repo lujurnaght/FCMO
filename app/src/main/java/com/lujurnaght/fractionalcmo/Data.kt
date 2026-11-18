@@ -39,6 +39,31 @@ import kotlin.math.roundToInt
     val t: Long, val score: Int, val verdict: String = "", val best: String = "", val elite: String = "", val answer: String = "",
 )
 
+@Serializable data class Bench(val id: Long, val client: String, val metric: String, val value: Double, val t: Long)
+
+data class Metric(val key: String, val name: String, val unit: String)
+
+val METRICS = listOf(
+    Metric("demo_opp", "Demo → opportunity", "%"),
+    Metric("win", "Win rate", "%"),
+    Metric("payback", "CAC payback", "months"),
+    Metric("cycle", "Sales cycle", "days"),
+    Metric("cpo", "Cost per opportunity", "$"),
+    Metric("speed", "Speed to lead", "hours"),
+    Metric("mkt_share", "Marketing share of pipeline", "%"),
+    Metric("nrr", "Net revenue retention", "%"),
+)
+
+fun median(v: List<Double>): Double {
+    val x = v.sorted(); val n = x.size
+    return if (n == 0) 0.0 else if (n % 2 == 1) x[n / 2] else (x[n / 2 - 1] + x[n / 2]) / 2
+}
+
+fun fmtVal(v: Double, unit: String): String {
+    val n = if (v == Math.floor(v)) "%,d".format(v.toLong()) else "%,.1f".format(v)
+    return when (unit) { "$" -> "$" + n; "%" -> "$n%"; else -> "$n $unit" }
+}
+
 @Serializable data class St(
     val xp: Int = 0,
     val events: List<Ev> = emptyList(),
@@ -52,6 +77,7 @@ import kotlin.math.roundToInt
     val offer: String = "",
     val exercises: Map<String, ExResult> = emptyMap(),
     val docs: Map<String, List<String>> = emptyMap(),
+    val bench: List<Bench> = emptyList(),
 )
 
 object Stages {

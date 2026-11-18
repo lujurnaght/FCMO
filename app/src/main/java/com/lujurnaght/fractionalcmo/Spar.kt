@@ -1,5 +1,10 @@
 package com.lujurnaght.fractionalcmo
 
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -26,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -74,7 +81,7 @@ fun SparTab(nav: Nav) {
         }
 
         Section(2, "Scenarios")
-        Scenarios.all.forEach { sc ->
+        Scenarios.everything.forEach { sc ->
             Row(
                 Modifier.fillMaxWidth().tap { nav.go(Route.SparR(sc.id)) }.padding(vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -102,7 +109,7 @@ fun SparTab(nav: Nav) {
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(shortDay(r.t), style = T.small, modifier = Modifier.width(56.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(Scenarios.all.firstOrNull { it.id == r.id }?.title ?: r.id, style = T.strong)
+                        Text(Scenarios.everything.firstOrNull { it.id == r.id }?.title ?: r.id, style = T.strong)
                         if (r.verdict.isNotBlank()) Text(r.verdict, style = T.small, maxLines = 2)
                     }
                     Text(r.score.toString(), style = T.h2)
@@ -203,6 +210,24 @@ fun SparScreen(id: String, nav: Nav) {
     val other = nameOf(s)
     LaunchedEffect(msgs.size, busy, result) { list.animateScrollToItem(maxOf(0, list.layoutInfo.totalItemsCount - 1)) }
 
+    // Voice: speak your reply (speech recognition), hear theirs (text to speech).
+    val ctx = LocalContext.current
+    var speakOn by rememberSaveable { mutableStateOf(false) }
+    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    DisposableEffect(Unit) {
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(ctx) { status -> if (status == TextToSpeech.SUCCESS) { engine?.setLanguage(Locale.US); tts.value = engine } }
+        onDispose { engine?.stop(); engine?.shutdown() }
+    }
+    LaunchedEffect(msgs.size, speakOn) {
+        val last = msgs.lastOrNull()
+        if (speakOn && last != null && last.role == "assistant") tts.value?.speak(last.text, TextToSpeech.QUEUE_FLUSH, null, "reply")
+    }
+    val listen = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        val heard = res.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!heard.isNullOrBlank()) input = (input.trim() + " " + heard).trim()
+    }
+
     Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
         BackRow("Back", nav.back)
         Label(s.role)
@@ -221,6 +246,17 @@ fun SparScreen(id: String, nav: Nav) {
         }
         Gap(10)
         if (result == null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+                Chip("Speak your reply", false) {
+                    runCatching {
+                        listen.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+                            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Your reply to $other"))
+                    }.onFailure { err = "No speech recognition on this phone." }
+                }
+                Chip("Hear $other", speakOn) { speakOn = !speakOn; if (!speakOn) tts.value?.stop() }
+            }
             Row(verticalAlignment = Alignment.Bottom) {
                 Input(input, { input = it }, if (Groq.ready) "Your reply…" else "Add your Groq key in Settings", Modifier.weight(1f), singleLine = false)
                 Spacer(Modifier.width(8.dp))

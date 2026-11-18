@@ -50,6 +50,10 @@ class ScreensTest {
                 case = DailyCase(today(), "The clinic app that stopped growing", "ShiftWell sells scheduling software to outpatient clinics at \$450 a month. ARR is \$3.2M and flat for three quarters.", "What do you change first, and what does your first month look like?"),
                 exercises = mapOf("pip1" to ExResult(t, 68, "Specific, but the competitors are vague.")),
                 docs = mapOf("proposal" to listOf("Growth has been flat for three quarters; sales says half the leads are clinics too small to afford us.", "Marketing-sourced pipeline that fits the ICP.", "", "", "Pipeline Diagnostic — 3 weeks, \$6,000")),
+                bench = listOf(
+                    Bench(1, "ShiftWell", "demo_opp", 38.0, t), Bench(2, "Ledgerly", "demo_opp", 27.0, t), Bench(3, "Northline", "demo_opp", 31.0, t),
+                    Bench(4, "ShiftWell", "payback", 12.0, t), Bench(5, "Ledgerly", "speed", 0.8, t),
+                ),
                 niche = "B2B SaaS, \$2–10M ARR, stuck after founder-led sales",
             ),
         )
@@ -69,6 +73,7 @@ class ScreensTest {
     @Test fun lessonScreen() = shot("6_lesson", 1, Route.LessonR("pip4"))
     @Test fun exerciseScreen() = shot("9_exercise", 1, Route.ExerciseR("pip3"))
     @Test fun templateScreen() = shot("10_template", 1, Route.TemplateR("proposal"))
+    @Test fun sparChat() = shot("11_spar_chat", 2, Route.SparR("salesvp"))
     @Test fun reviewScreen() = shot("7_review", 1, Route.ReviewR)
 
     @Test fun scoreScreen() {

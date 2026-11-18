@@ -110,6 +110,67 @@ fun FieldScreen(@Suppress("UNUSED_PARAMETER") nav: Nav) {
             Gap(4)
             ch.quests.forEach { q -> QuestRow(q, s.quests[q.id], openQ == q.id) { openQ = if (openQ == q.id) null else q.id } }
         }
+
+        Section(5, "Benchmarks")
+        Text("Your moat: real numbers from every client. After a few engagements you'll know what 'normal' is in your niche better than anyone.", style = T.small)
+        Gap(12)
+        Benchmarks(s)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Benchmarks(s: St) {
+    var client by remember { mutableStateOf("") }
+    var metric by remember { mutableStateOf(METRICS.first().key) }
+    var value by remember { mutableStateOf("") }
+    Input(client, { client = it }, "Client (or a code name)")
+    Gap(8)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        METRICS.forEach { m -> Chip(m.name, metric == m.key) { metric = m.key } }
+    }
+    Gap(8)
+    val unit = METRICS.first { it.key == metric }.unit
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Input(value, { v -> value = v.filter { it.isDigit() || it == '.' }.take(9) }, "Value ($unit)", Modifier.weight(1f), numeric = true)
+        Spacer(Modifier.width(8.dp))
+        PrimaryButton("Add", enabled = client.isNotBlank() && value.toDoubleOrNull() != null) {
+            val b = Bench(now(), client.trim(), metric, value.toDouble(), now())
+            Store.edit { it.copy(bench = it.bench + b) }
+            value = ""
+        }
+    }
+    Gap(16)
+    if (s.bench.isEmpty()) {
+        Text("No numbers yet. Add your first client's baseline and results.", style = T.small)
+        return
+    }
+    METRICS.forEach { m ->
+        val vals = s.bench.filter { it.metric == m.key }.map { it.value }
+        if (vals.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(m.name, style = T.strong)
+                    Text("${vals.size} data point${if (vals.size == 1) "" else "s"} · range ${fmtVal(vals.min(), m.unit)}–${fmtVal(vals.max(), m.unit)}", style = T.small)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(fmtVal(median(vals), m.unit), style = T.h2)
+                    Label("Median")
+                }
+            }
+            Rule()
+        }
+    }
+    Gap(14)
+    Label("Latest entries")
+    s.bench.sortedByDescending { it.t }.take(8).forEach { b ->
+        val m = METRICS.firstOrNull { it.key == b.metric }
+        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("${b.client} · ${m?.name ?: b.metric}", style = T.small.copy(color = P.inkSoft), modifier = Modifier.weight(1f))
+            Text(fmtVal(b.value, m?.unit ?: ""), style = T.strong)
+            Spacer(Modifier.width(12.dp))
+            Text("✕", style = T.small, modifier = Modifier.tap { Store.edit { st -> st.copy(bench = st.bench.filter { it.id != b.id }) } })
+        }
     }
 }
 

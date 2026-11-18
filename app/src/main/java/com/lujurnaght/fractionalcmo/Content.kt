@@ -61,7 +61,8 @@ object Scenarios {
             "Hey, thanks for setting this up. I know the numbers haven't been where we wanted. Honestly the market's been really soft, and the landing pages aren't helping us.",
             listOf("Clear expectations", "Separates truth from excuse", "Accountability", "Fairness", "Agreed plan with dates")),
     )
-    fun get(id: String) = all.first { it.id == id }
+    val everything: List<Scenario> get() = all + MORE_SCENARIOS
+    fun get(id: String) = everything.first { it.id == id }
 }
 
 data class Quest(val id: String, val title: String, val detail: String, val xp: Int)
