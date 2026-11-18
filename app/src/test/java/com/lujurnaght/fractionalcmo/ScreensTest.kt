@@ -59,15 +59,15 @@ class ScreensTest {
         rule.onRoot().captureRoboImage("build/screens/$name.png")
     }
 
-    @Test fun today() = shot("1_today", 0)
-    @Test fun learn() = shot("2_learn", 1)
-    @Test fun spar() = shot("3_spar", 2)
-    @Test fun field() = shot("4_field", 3)
-    @Test fun rank() = shot("5_rank", 4)
-    @Test fun lesson() = shot("6_lesson", 1, Route.LessonR("num1"))
-    @Test fun review() = shot("7_review", 1, Route.ReviewR)
+    @Test fun todayScreen() = shot("1_today", 0)
+    @Test fun learnScreen() = shot("2_learn", 1)
+    @Test fun sparScreen() = shot("3_spar", 2)
+    @Test fun fieldScreen() = shot("4_field", 3)
+    @Test fun rankScreen() = shot("5_rank", 4)
+    @Test fun lessonScreen() = shot("6_lesson", 1, Route.LessonR("num1"))
+    @Test fun reviewScreen() = shot("7_review", 1, Route.ReviewR)
 
-    @Test fun score() {
+    @Test fun scoreScreen() {
         rule.setContent {
             AppTheme {
                 Box(Modifier.fillMaxSize().background(P.paper).padding(22.dp)) {
@@ -78,8 +78,7 @@ class ScreensTest {
                         Criterion("Quality of questions", 4, "Open, specific, well sequenced."),
                         Criterion("Next step secured", 5, "A diagnostic call booked for Thursday."),
                     ), "Senior discovery with one hole: the money. Without the cost of inaction you can't price.", "Asking what the board will ask in seven weeks.",
-                        "Open with the board meeting, not the product. 'In seven weeks your board will ask why growth is flat. What will you tell them?' Then quantify: three flat quarters at \$3.2M is roughly \$1M of growth you planned and didn't get. Propose a three-week diagnostic that ends with the board narrative, priced against that number.")),
-                    )
+                        "Open with the board meeting, not the product. 'In seven weeks your board will ask why growth is flat. What will you tell them?' Then quantify: three flat quarters at \$3.2M is roughly \$1M of growth you planned and didn't get. Propose a three-week diagnostic that ends with the board narrative, priced against that number."))
                 }
             }
         }
