@@ -44,6 +44,8 @@ jobs:
           make_latest: true
 
   screens:
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -66,3 +68,12 @@ jobs:
           name: screens
           retention-days: 3
           path: app/build/screens/*.png
+      - name: Keep the screenshots on the 'screens' branch (readable without artifact downloads)
+        if: always()
+        run: |
+          set -e
+          ls app/build/screens/*.png >/dev/null 2>&1 || exit 0
+          mkdir /tmp/s && cp app/build/screens/*.png /tmp/s/ && cd /tmp/s
+          git init -q -b screens && git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "screens ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" screens
