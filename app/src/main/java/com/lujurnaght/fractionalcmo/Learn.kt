@@ -45,6 +45,22 @@ fun LearnScreen(nav: Nav) {
         } else {
             Text("No cards due. Every lesson you complete adds its cards to your review.", style = T.small)
         }
+        Section(0, "Toolkit", trailing = { Text("${Toolkit.all.size} documents", style = T.small) })
+        Text("Real documents you'll use with clients. Fill them in, get them reviewed by the panel, send them.", style = T.small)
+        Gap(6)
+        Toolkit.all.forEach { tp ->
+            val filled = s.docs[tp.id].orEmpty().count { it.isNotBlank() }
+            Row(
+                Modifier.fillMaxWidth().tap { nav.go(Route.TemplateR(tp.id)) }.padding(vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Tick(filled == tp.fields.size, size = 18.dp)
+                Spacer(Modifier.width(14.dp))
+                Text(tp.title, style = T.strong, modifier = Modifier.weight(1f))
+                Text("$filled/${tp.fields.size}", style = T.small)
+            }
+            Rule()
+        }
         Curriculum.tracks.forEachIndexed { i, t ->
             val d = t.lessons.count { it.id in s.lessons }
             Section(i + 1, t.title, trailing = { Text("$d/${t.lessons.size}", style = T.small) })
@@ -58,7 +74,8 @@ fun LearnScreen(nav: Nav) {
                     Tick(l.id in s.lessons, size = 18.dp)
                     Spacer(Modifier.width(14.dp))
                     Text(l.title, style = T.strong, modifier = Modifier.weight(1f))
-                    Text("${l.minutes} min", style = T.small)
+                    val ex = s.exercises[l.id]
+                    Text(if (ex != null) "${ex.score}" else "${l.minutes} min", style = if (ex != null) T.strong else T.small)
                 }
                 Rule()
             }
@@ -84,11 +101,48 @@ fun LessonScreen(id: String, nav: Nav) {
             Text(p.trim(), style = T.body)
             Gap(16)
         }
+        if (l.example.isNotBlank()) {
+            Column(Modifier.fillMaxWidth().background(P.sheet, Sharp).border(1.dp, P.rule, Sharp).padding(18.dp)) {
+                Label("Worked example", color = P.ink)
+                Gap(10)
+                l.example.split("\n\n").forEach { p -> Text(p.trim(), style = T.body.copy(fontSize = 15.sp, lineHeight = 23.sp)); Gap(10) }
+            }
+            Gap(22)
+        }
         Rule(color = P.ink, thick = 2.dp)
         Gap(14)
         Label("Key moves", color = P.ink)
         Gap(10)
         Bullets(l.moves)
+        Gap(24)
+        l.exercise?.let { ex ->
+            val res = Store.st.exercises[l.id]
+            InkPanel {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Label("Exercise", color = P.onInkDim)
+                    Spacer(Modifier.weight(1f))
+                    if (res != null) Label("Best ${res.score}/100", color = P.onInk)
+                }
+                Gap(8)
+                Text(ex.prompt, style = T.body.copy(color = P.onInk))
+                Gap(16)
+                PaperButton(if (res == null) "Do it — the panel grades it →" else "Try to beat ${res.score} →") { nav.go(Route.ExerciseR(l.id)) }
+            }
+            Gap(14)
+        }
+        l.template?.let { tid ->
+            val tp = Toolkit.get(tid)
+            GhostButton("Toolkit: ${tp.title} →", Modifier.fillMaxWidth()) { nav.go(Route.TemplateR(tid)) }
+            Gap(14)
+        }
+        if (l.sources.isNotEmpty()) {
+            Gap(10)
+            Label("Read deeper — check your library")
+            Gap(8)
+            l.sources.forEach { Text("· $it", style = T.small.copy(color = P.inkSoft)); Gap(4) }
+            Gap(20)
+        }
+        AskBox(l)
         Gap(24)
         Label("Cards you'll keep")
         Gap(8)

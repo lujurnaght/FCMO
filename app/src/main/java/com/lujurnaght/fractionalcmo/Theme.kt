@@ -110,8 +110,10 @@ fun Section(num: Int, title: String, modifier: Modifier = Modifier, trailing: (@
     Column(modifier.fillMaxWidth().padding(top = 34.dp, bottom = 14.dp)) {
         Rule(color = P.ink, thick = 2.dp)
         Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(num.toString().padStart(2, '0'), style = T.h2.copy(color = P.faint))
-            Spacer(Modifier.width(12.dp))
+            if (num > 0) {
+                Text(num.toString().padStart(2, '0'), style = T.h2.copy(color = P.faint))
+                Spacer(Modifier.width(12.dp))
+            }
             Text(title, style = T.h2, modifier = Modifier.weight(1f))
             trailing?.invoke()
         }

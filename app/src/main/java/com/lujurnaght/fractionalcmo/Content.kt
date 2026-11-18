@@ -1,7 +1,11 @@
 package com.lujurnaght.fractionalcmo
 
 data class QA(val q: String, val a: String)
-data class Lesson(val id: String, val title: String, val minutes: Int, val body: String, val moves: List<String>, val cards: List<QA>)
+data class Exercise(val prompt: String, val rubric: List<String>)
+data class Lesson(
+    val id: String, val title: String, val minutes: Int, val body: String, val moves: List<String>, val cards: List<QA>,
+    val example: String = "", val exercise: Exercise? = null, val template: String? = null, val sources: List<String> = emptyList(),
+)
 data class Track(val id: String, val title: String, val blurb: String, val lessons: List<Lesson>)
 
 object Curriculum {
@@ -217,83 +221,8 @@ Write decisions down where everyone can find them. A fractional who installs a c
                 QA("Weekly / monthly / quarterly rhythm?", "Numbers and blockers / results vs plan and budget moves / strategy, bets, board story."),
             )),
         )),
-        Track("pipeline", "Your own pipeline", "Being chosen before you pitch.", listOf(
-            Lesson("pip1", "Niche or die", 3, """
-Generalist fractional CMOs compete on price. A niche is industry × stage × problem: "B2B SaaS between $2M and $10M ARR, stuck after founder-led sales" beats "marketing leader for growing companies".
-
-A niche makes referrals easy (people know who to send), content sharper (you speak to one reader), and proof transferable (your last case looks like their company). Pick where you have unfair insight or access. You can widen later; you can't stand out early without it.
-""".trim(), listOf(
-                "Write your niche as industry × stage × problem.",
-                "Test it: can a friend name two companies who fit?",
-            ), listOf(
-                QA("Formula for a niche?", "Industry × stage × problem."),
-                QA("Three things a niche gives you?", "Easier referrals, sharper content, transferable proof."),
-            )),
-            Lesson("pip2", "The authority engine", 3, """
-Publish what you learn while you work: teardowns, frameworks, real numbers, mistakes. Three posts a week aimed at your niche, each with one idea, one specific claim and one piece of proof.
-
-Good content does discovery for you: prospects arrive having read your thinking, already half-sold. Repurpose everything — a spar in this app becomes a post, a client lesson (anonymised) becomes a teardown, a teardown becomes a talk.
-""".trim(), listOf(
-                "Turn every spar and case you do here into a post.",
-                "One idea, one claim, one proof per post.",
-            ), listOf(
-                QA("The shape of a strong post?", "One idea, one specific claim, one piece of proof."),
-                QA("What does good content do in sales?", "It runs discovery for you: prospects arrive pre-sold."),
-            )),
-            Lesson("pip3", "Outbound founders answer", 3, """
-Founders delete templates. Write four to six sentences: a specific observation about their company, a hypothesis about the problem it suggests, one credible proof point, and a small ask ("worth a 20-minute look?").
-
-Warm before cold: comment on their posts for a week first. Most replies come on the second to fourth follow-up, so plan the sequence before you send the first note.
-
-And ask for referrals constantly, specifically: "Who do you know running a SaaS company that's stuck after founder-led sales?"
-""".trim(), listOf(
-                "Observation → hypothesis → proof → small ask.",
-                "Plan four touches before sending the first.",
-            ), listOf(
-                QA("Structure of an outbound note?", "Specific observation, hypothesis, proof point, small ask."),
-                QA("When do most outbound replies come?", "On the second to fourth follow-up."),
-                QA("How to ask for referrals?", "Specifically: name the exact kind of company and situation."),
-            )),
-        )),
-        Track("closing", "Selling & closing", "Discovery, proposals, objections, signatures.", listOf(
-            Lesson("clo1", "Discovery", 4, """
-Diagnose like a doctor. Situation, pain, impact in money, what they've tried, why now, who decides, budget, timeline. Talk thirty percent of the time, listen seventy.
-
-The most useful question: "What happens if this isn't fixed in six months?" It turns a marketing problem into a business cost, and the business cost sets your price.
-
-End every call with an agreed next step and send a recap in their words the same day. A recap that says exactly what they told you is already half a proposal.
-""".trim(), listOf(
-                "Quantify the pain in money before you talk price.",
-                "Recap in their words within 24 hours.",
-            ), listOf(
-                QA("The most useful discovery question?", "\"What happens if this isn't fixed in six months?\""),
-                QA("What to uncover in discovery?", "Situation, pain, impact, attempts, why now, decision process, budget, timeline."),
-            )),
-            Lesson("clo2", "Proposals and pricing", 3, """
-A proposal is their words back to them, the outcomes, and options. Offer three: a diagnostic, a core retainer, and a premium retainer. Options anchor the price and turn "whether" into "which".
-
-Price on value and scope, never hours. Spell out what you need from them — access, a sponsor, a budget — because missing inputs kill engagements.
-
-Send it within 48 hours and walk them through it live rather than letting it sit in an inbox.
-""".trim(), listOf(
-                "Always present three options.",
-                "Never send a proposal without a call to walk through it.",
-            ), listOf(
-                QA("Why three options in a proposal?", "They anchor price and turn 'whether' into 'which'."),
-                QA("What must every proposal include besides your work?", "What you need from them: access, a sponsor, budget."),
-            )),
-            Lesson("clo3", "Objections and the close", 3, """
-Objections are questions in disguise. "Too expensive" — compared to what? A full-time CMO costs far more in salary, equity and hiring risk. "We'll think about it" — find the real concern: "What would you need to see to decide?" "Why not an agency?" — agencies execute; you decide what's worth executing and hold them to it.
-
-Close with a clear ask and a start date. Use a real reason for timing (a launch, a board meeting, your capacity), never fake urgency.
-""".trim(), listOf(
-                "Answer price objections with the alternative's cost.",
-                "Ask for the decision and a start date out loud.",
-            ), listOf(
-                QA("Reframe for 'why not an agency?'", "Agencies execute; you decide what's worth executing and hold them to it."),
-                QA("Response to 'we'll think about it'?", "Find the real concern: 'What would you need to see to decide?'"),
-            )),
-        )),
+        PIPELINE,
+        CLOSING,
         Track("delivery", "Delivery & retention", "Keeping clients, proving it, growing them.", listOf(
             Lesson("del1", "Managing the CEO", 3, """
 Your real client is usually the CEO. Hold a weekly one-to-one. No surprises, ever. Disagree in private and commit in public. Bring options with a recommendation, not problems.

@@ -72,6 +72,8 @@ fun RankScreen(@Suppress("UNUSED_PARAMETER") nav: Nav) {
             "${s.lessons.size}/${Curriculum.allLessons.size}" to "Lessons",
             s.cards.count { it.value.reps > 0 }.toString() to "Cards known",
             s.spars.size.toString() to "Spars",
+            s.exercises.size.toString() to "Exercises",
+            (s.exercises.values.maxOfOrNull { it.score }?.toString() ?: "—") to "Best exercise",
             (s.spars.maxOfOrNull { it.score }?.toString() ?: "—") to "Best spar",
             fmtNum(s.total("outreach")) to "Outreach",
             s.total("call").toString() to "Calls",

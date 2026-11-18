@@ -48,6 +48,8 @@ class ScreensTest {
                 ),
                 spars = listOf(SparRun("disc", t - day, 64, "Good questions, but you never quantified the cost of flat growth.")),
                 case = DailyCase(today(), "The clinic app that stopped growing", "ShiftWell sells scheduling software to outpatient clinics at \$450 a month. ARR is \$3.2M and flat for three quarters.", "What do you change first, and what does your first month look like?"),
+                exercises = mapOf("pip1" to ExResult(t, 68, "Specific, but the competitors are vague.")),
+                docs = mapOf("proposal" to listOf("Growth has been flat for three quarters; sales says half the leads are clinics too small to afford us.", "Marketing-sourced pipeline that fits the ICP.", "", "", "Pipeline Diagnostic — 3 weeks, \$6,000")),
                 niche = "B2B SaaS, \$2–10M ARR, stuck after founder-led sales",
             ),
         )
@@ -64,7 +66,9 @@ class ScreensTest {
     @Test fun sparScreen() = shot("3_spar", 2)
     @Test fun fieldScreen() = shot("4_field", 3)
     @Test fun rankScreen() = shot("5_rank", 4)
-    @Test fun lessonScreen() = shot("6_lesson", 1, Route.LessonR("num1"))
+    @Test fun lessonScreen() = shot("6_lesson", 1, Route.LessonR("pip4"))
+    @Test fun exerciseScreen() = shot("9_exercise", 1, Route.ExerciseR("pip3"))
+    @Test fun templateScreen() = shot("10_template", 1, Route.TemplateR("proposal"))
     @Test fun reviewScreen() = shot("7_review", 1, Route.ReviewR)
 
     @Test fun scoreScreen() {

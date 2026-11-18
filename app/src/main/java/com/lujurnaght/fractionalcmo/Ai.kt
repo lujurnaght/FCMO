@@ -127,4 +127,52 @@ $answer
 Criteria, in this order: Diagnosis; Prioritisation; Use of the numbers; Actionability; Commercial judgment."""
         return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
     }
+
+    private fun you(): String {
+        val st = Store.st
+        return buildString {
+            append("The learner is training to become a top-1% fractional CMO.")
+            if (st.niche.isNotBlank()) append(" Their niche: ${st.niche}.")
+            if (st.offer.isNotBlank()) append(" Their offer: ${st.offer}.")
+        }
+    }
+
+    suspend fun gradeExercise(l: Lesson, answer: String): Score {
+        val ex = l.exercise ?: error("No exercise")
+        val prompt = """${you()}
+Lesson: ${l.title}
+Lesson content (what they were taught):
+${l.body.take(2500)}
+
+Exercise: ${ex.prompt}
+Criteria, in this order: ${ex.rubric.joinToString("; ")}.
+
+Their answer:
+$answer
+
+Grade it as you would a real client deliverable. In "elite", write the answer a top-1% fractional CMO would give for THEIR niche (or a sensible niche if none is given)."""
+        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+    }
+
+    suspend fun reviewDoc(t: Template, values: List<String>): Score {
+        val doc = t.fields.mapIndexed { i, f -> "## ${f.title}\n${values.getOrNull(i).orEmpty().ifBlank { "(empty)" }}" }.joinToString("\n\n")
+        val prompt = """${you()}
+Document type: ${t.title} — ${t.why}
+
+The document:
+$doc
+
+Criteria, in this order: Clarity; Specificity to the niche; Persuasiveness; Completeness; Would a real founder act on it.
+Grade it as a real client-facing document. In "elite", rewrite its weakest section the way a top-1% fractional CMO would."""
+        return parseScore(chat(GRADER, listOf(Msg("user", prompt)), temperature = 0.2, effort = "medium"))
+    }
+
+    suspend fun askLesson(l: Lesson, history: List<Msg>): String {
+        val system = """You are a top-1% fractional CMO coaching a protégé. ${you()}
+They are studying this lesson: "${l.title}".
+${l.body.take(3000)}
+Worked example: ${l.example.take(1200)}
+Answer their question directly and concretely, with numbers or examples from their niche where possible. Be honest when something is uncertain or depends on context. Plain prose, at most 180 words, no markdown headings."""
+        return chat(system, history, temperature = 0.5, effort = "medium")
+    }
 }

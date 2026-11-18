@@ -44,6 +44,8 @@ sealed interface Route {
     data object ReviewR : Route
     data class SparR(val id: String) : Route
     data object CaseR : Route
+    data class ExerciseR(val id: String) : Route
+    data class TemplateR(val id: String) : Route
 }
 
 class Nav(val go: (Route) -> Unit, val back: () -> Unit, val replace: (Route) -> Unit, val tab: (Int) -> Unit)
@@ -79,6 +81,8 @@ fun App(startTab: Int = 0, startRoute: Route? = null) {
                 Route.ReviewR -> ReviewScreen(nav)
                 is Route.SparR -> SparScreen(r.id, nav)
                 Route.CaseR -> CaseScreen(nav)
+                is Route.ExerciseR -> ExerciseScreen(r.id, nav)
+                is Route.TemplateR -> TemplateScreen(r.id, nav)
             }
         }
         if (stack.isEmpty() && !WindowInsets.isImeVisible) BottomBar(tab) { tab = it }

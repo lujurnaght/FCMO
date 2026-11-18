@@ -35,6 +35,10 @@ import kotlin.math.roundToInt
     val answer: String = "", val score: Int = -1, val verdict: String = "", val elite: String = "",
 )
 
+@Serializable data class ExResult(
+    val t: Long, val score: Int, val verdict: String = "", val best: String = "", val elite: String = "", val answer: String = "",
+)
+
 @Serializable data class St(
     val xp: Int = 0,
     val events: List<Ev> = emptyList(),
@@ -46,6 +50,8 @@ import kotlin.math.roundToInt
     val case: DailyCase? = null,
     val niche: String = "",
     val offer: String = "",
+    val exercises: Map<String, ExResult> = emptyMap(),
+    val docs: Map<String, List<String>> = emptyMap(),
 )
 
 object Stages {
