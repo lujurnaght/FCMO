@@ -95,6 +95,22 @@ object Toolkit {
             Slot("Next quarter's bets and budget", "With the assumptions.", 4),
             Slot("Asks of the board", "Decisions or help you need.", 2),
         )),
+        Template("brief", "Agency brief", "What any agency or freelancer needs to do great work — and to be held to it.", listOf(
+            Slot("Objective", "The business outcome, with a number.", 2),
+            Slot("Audience", "The ICP, in their words; who to exclude.", 3),
+            Slot("Message", "Value proposition and the pillar this work supports.", 3),
+            Slot("Deliverables", "What exactly, how many, which formats.", 3),
+            Slot("Constraints", "Brand, legal, budget, timing.", 2),
+            Slot("Success metric and checkpoints", "What good looks like at 30, 60, 90 days.", 3),
+            Slot("Approver and deadline", "Who signs off, by when.", 2),
+        )),
+        Template("case", "Case study", "Proof that sells the next client. Under 200 words.", listOf(
+            Slot("Situation", "The company (anonymised if needed) and the problem, in numbers.", 3),
+            Slot("Diagnosis", "What was really going on.", 3),
+            Slot("Key decisions", "The few choices that mattered — not a list of activities.", 4),
+            Slot("Results", "Before → after, with the time frame.", 3),
+            Slot("Quote", "The client in their words.", 2),
+        )),
     )
     fun get(id: String) = all.first { it.id == id }
 }
